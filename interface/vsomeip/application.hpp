@@ -519,6 +519,36 @@ public:
     virtual void register_message_handler(service_t _service,
             instance_t _instance, method_t _method,
             const message_handler_t &_handler) = 0;
+
+    /**
+     *
+     * \brief Registers a handler for the specified method or event. 
+     *
+     * A user application must call this method to register callbacks for
+     * for messages that match the specified service, instance, method/event
+     * pattern. It is possible to specify wildcard values for all three
+     * identifiers arguments and to register multiple handlers per service,
+     * instance, method/event combination.
+     *
+     * \param _service Service identifier of the service that contains the
+     * method or event. Can be set to ANY_SERVICE to register a handler for
+     * a message independent from a specific service.
+     * \param _instance Instance identifier of the service instance that
+     * contains the method or event. Can be set to ANY_INSTANCE to register
+     * a handler for a message independent from a specific service.
+     * \param _method Method/Event identifier of the method/event that is
+     * to be handled. Can be set to ANY_METHOD to register a handler for
+     * all methods and events.
+     * \param _handler Callback that will be called if a message arrives
+     * that matches the specified service, instance and method/event
+     * parameters.
+     * \param _tag Tag that identifies the handler.
+     *
+     */
+    virtual void register_message_handler(service_t _service,
+            instance_t _instance, method_t _method,
+            const message_handler_t &_handler, void *_tag) = 0;
+
     /**
      *
      * \brief Unregisters the message handler for the specified service
@@ -536,6 +566,25 @@ public:
      */
     virtual void unregister_message_handler(service_t _service,
             instance_t _instance, method_t _method) = 0;
+
+    /**
+     *
+     * \brief Unregisters the message handler for the specified service
+     * method/event notification.
+     *
+     * \param _service Service identifier of the service that contains the
+     * method or event. Can be set to ANY_SERVICE to unregister a handler for
+     * a message independent from a specific service.
+     * \param _instance Instance identifier of the service instance that
+     * contains the method or event. Can be set to ANY_INSTANCE to unregister
+     * a handler for a message independent from a specific service.
+     * \param _method Method/Event identifier of the method/event that is
+     * to be handled. Can be set to ANY_METHOD to unregister a handler for
+     * all methods and events.
+     * \param _tag Tag that identifies the handler.
+     */
+    virtual void unregister_message_handler(service_t _service,
+            instance_t _instance, method_t _method, void *_tag) = 0;
 
     /**
      *
@@ -1134,11 +1183,12 @@ public:
      * parameters.
      * \param _type Replace, append to or prepend to the current handler (if
      * any).
+     * \param _tag Tag that identifies the handler.
      */
     virtual void register_message_handler_ext(service_t _service,
             instance_t _instance, method_t _method,
             const message_handler_t &_handler,
-			handler_registration_type_e _type) = 0;
+	    handler_registration_type_e _type, void *_tag) = 0;
 };
 
 /** @} */

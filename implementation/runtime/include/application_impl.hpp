@@ -117,8 +117,13 @@ public:
 
     VSOMEIP_EXPORT void register_message_handler(service_t _service,
             instance_t _instance, method_t _method, const message_handler_t &_handler);
+    VSOMEIP_EXPORT void register_message_handler(service_t _service,
+            instance_t _instance, method_t _method, const message_handler_t &_handler,
+            void *_tag);
     VSOMEIP_EXPORT void unregister_message_handler(service_t _service,
             instance_t _instance, method_t _method);
+    VSOMEIP_EXPORT void unregister_message_handler(service_t _service,
+            instance_t _instance, method_t _method, void *_tag);
 
     VSOMEIP_EXPORT void register_availability_handler(service_t _service,
             instance_t _instance, const availability_handler_t &_handler,
@@ -234,10 +239,12 @@ public:
     VSOMEIP_EXPORT void register_message_handler_ext(
             service_t _service, instance_t _instance, method_t _method,
             const message_handler_t &_handler,
-            handler_registration_type_e _type);
+            handler_registration_type_e _type, void *_tag);
 
 private:
-    using members_methods_t = std::map<method_t, std::deque<message_handler_t> >;
+    using members_tags_t = std::map<void*, std::deque<message_handler_t>>;
+    using members_tags_iterator_t = members_tags_t::const_iterator;
+    using members_methods_t = std::map<method_t, members_tags_t>;
     using members_methods_iterator_t = members_methods_t::const_iterator;
     using members_instances_t = std::map<instance_t, members_methods_t>;
     using members_instances_iterator_t = members_instances_t::const_iterator;

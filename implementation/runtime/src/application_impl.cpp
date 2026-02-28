@@ -3,6 +3,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+#include <algorithm>
 #include <future>
 #include <thread>
 #include <iomanip>
@@ -1372,7 +1373,15 @@ void application_impl::register_message_handler(service_t _service,
         instance_t _instance, method_t _method, const message_handler_t &_handler) {
 
     register_message_handler_ext(_service, _instance, _method, _handler,
-            handler_registration_type_e::HRT_REPLACE);
+            handler_registration_type_e::HRT_REPLACE, nullptr);
+}
+
+void application_impl::register_message_handler(service_t _service,
+        instance_t _instance, method_t _method,
+        const message_handler_t &_handler, void *_tag) {
+
+    register_message_handler_ext(_service, _instance, _method, _handler,
+            handler_registration_type_e::HRT_APPEND, _tag);
 }
 
 void application_impl::unregister_message_handler(service_t _service,
@@ -1385,6 +1394,24 @@ void application_impl::unregister_message_handler(service_t _service,
             auto found_method = found_instance->second.find(_method);
             if (found_method != found_instance->second.end()) {
                 found_instance->second.erase(_method);
+            }
+        }
+    }
+}
+
+void application_impl::unregister_message_handler(service_t _service,
+        instance_t _instance, method_t _method, void *_tag) {
+    std::lock_guard<std::mutex> its_lock(members_mutex_);
+    auto found_service = members_.find(_service);
+    if (found_service != members_.end()) {
+        auto found_instance = found_service->second.find(_instance);
+        if (found_instance != found_service->second.end()) {
+            auto found_method = found_instance->second.find(_method);
+            if (found_method != found_instance->second.end()) {
+                auto found_tag = found_method->second.find(_tag);
+                if (found_tag != found_method->second.end()) {
+                    found_method->second.erase(_tag);
+                }
             }
         }
     }
@@ -1710,7 +1737,13 @@ void application_impl::find_method_handlers(
 
     auto its_method_it = _it->second.find(_method);
     if (its_method_it != _it->second.end()) {
-        _handlers = its_method_it->second;
+        std::deque<message_handler_t> handlers;
+
+        for (const auto& tag : its_method_it->second) {
+            handlers.insert(handlers.end(), tag.second.begin(), tag.second.end());
+        }
+
+        _handlers = handlers;
     }
 }
 
@@ -2952,18 +2985,18 @@ application_impl::get_additional_data(const std::string &_plugin_name) {
 void application_impl::register_message_handler_ext(
         service_t _service, instance_t _instance, method_t _method,
         const message_handler_t &_handler,
-        handler_registration_type_e _type) {
+        handler_registration_type_e _type, void *_tag) {
 
     std::lock_guard<std::mutex> its_lock(members_mutex_);
     switch (_type) {
     case handler_registration_type_e::HRT_REPLACE:
-        members_[_service][_instance][_method].clear();
+        members_[_service][_instance][_method][_tag].clear();
         [[gnu::fallthrough]];
     case handler_registration_type_e::HRT_APPEND:
-        members_[_service][_instance][_method].push_back(_handler);
+        members_[_service][_instance][_method][_tag].push_back(_handler);
         break;
     case handler_registration_type_e::HRT_PREPEND:
-        members_[_service][_instance][_method].push_front(_handler);
+        members_[_service][_instance][_method][_tag].push_front(_handler);
         break;
     default:
         ;
